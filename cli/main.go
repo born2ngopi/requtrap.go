@@ -8,6 +8,7 @@ import (
 	"github.com/libidev/requtrap.go/cli/errors"
 )
 
+// Parse - parsing CLI command
 func Parse(args []string) {
 	var err error
 	defer errors.IsError(err)

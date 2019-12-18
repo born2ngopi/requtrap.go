@@ -9,19 +9,32 @@ import (
 	"time"
 )
 
-type HttpHandler struct {
-	Routes []config.ConfigService
+// Handler - main HTTP handler
+type Handler struct {
+	Routes []config.Service
+	Cors   config.Cors
 }
 
-func (h HttpHandler) GetRequestMethod(r *http.Request) string {
+// GetRequestMethod - to get request method, eg. GET, POST, PUT, etc
+func (h Handler) GetRequestMethod(r *http.Request) string {
 	return r.Method
 }
 
-func (h *HttpHandler) AddRoute(service config.ConfigService) {
+// AddRoute - to add service routes into route list
+func (h *Handler) AddRoute(service config.Service) {
 	h.Routes = append(h.Routes, service)
 }
 
-func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP - entry point for HTTP handler
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if h.Cors.Enable {
+		EnableCors(&w, h.Cors)
+	}
+
+	if r.Method == http.MethodOptions {
+		return
+	}
+
 	if r.URL.Path != "favicon.ico" {
 		for _, service := range h.Routes {
 			path := r.URL.Path
@@ -32,7 +45,8 @@ func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h HttpHandler) Gateway(w http.ResponseWriter, r *http.Request) func(config.ConfigService) {
+// Gateway - frowarding client request to all services
+func (h Handler) Gateway(w http.ResponseWriter, r *http.Request) func(config.Service) {
 	var reqbody []byte
 	var err error
 
@@ -40,11 +54,11 @@ func (h HttpHandler) Gateway(w http.ResponseWriter, r *http.Request) func(config
 		reqbody, err = ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			http.Error(w,err.Error(),http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
 
-	return func(service config.ConfigService) {
+	return func(service config.Service) {
 		url := service.Upstream + service.Path
 		tr := &http.Transport{
 			MaxIdleConns:       10,
@@ -57,21 +71,21 @@ func (h HttpHandler) Gateway(w http.ResponseWriter, r *http.Request) func(config
 
 		resp, err := client.Do(req)
 		if err != nil {
-			http.Error(w,err.Error(),http.StatusInternalServerError)
-      return
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		body, err := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
 		if err != nil {
-			http.Error(w,err.Error(),http.StatusInternalServerError)
-      return
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		fmt.Println("")
 		fmt.Println("Status :", resp.Status)
 		fmt.Println("Header :")
 		for k, v := range resp.Header {
-			fmt.Println("  ", k + ":", v[0])
+			fmt.Println("  ", k+":", v[0])
 		}
 		fmt.Println("Body   :", string(body))
 

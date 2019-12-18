@@ -5,6 +5,7 @@ import (
 	"log"
 )
 
+// Errs - alias for many errors
 type Errs []error
 
 // func (list Errs)error() string{
@@ -21,6 +22,7 @@ type Errs []error
 // 	return strings.Join(output)
 // }
 
+// IsError - check if error or not
 func IsError(err error) {
 	if err != nil {
 		log.Fatal(err)

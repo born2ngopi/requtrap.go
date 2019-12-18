@@ -6,6 +6,8 @@ import (
 	"github.com/libidev/requtrap.go/http"
 )
 
+// Help Action
+// Display help message
 func Help() {
 	fmt.Println(" ____                 _____")
 	fmt.Println("|  _ \\ ___  __ _ _   |_   _| __ __ _ _ __")
@@ -31,6 +33,8 @@ Example:
 `)
 }
 
-func Start(conf *config.ConfigYaml) {
+// Start Action
+// Running API gateway server
+func Start(conf *config.Yaml) {
 	http.Serve(conf)
 }
